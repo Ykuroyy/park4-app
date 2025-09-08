@@ -6,7 +6,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const compression = require('compression');
 const ExcelJS = require('exceljs');
-const { initializeDatabase, DatabaseManager } = require('./db');
+const { initializeDatabase, DatabaseManager, useDatabase } = require('./db');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -190,19 +190,31 @@ app.get('/api/export/excel', async (req, res) => {
 // Initialize database and start server
 async function startServer() {
   try {
-    // Initialize database tables
+    // Initialize database tables (will fallback to memory if no DB)
     await initializeDatabase();
-    console.log('Database initialized successfully');
+    
+    if (useDatabase) {
+      console.log('✅ Database initialized successfully');
+    } else {
+      console.log('⚠️  Running in memory-only mode (no database)');
+    }
     
     // Start server
     app.listen(PORT, () => {
-      console.log(`Park4 app running on port ${PORT}`);
-      console.log(`Access the app at: http://localhost:${PORT}`);
+      console.log(`🚀 Park4 app running on port ${PORT}`);
+      console.log(`📱 Access the app at: http://localhost:${PORT}`);
+      console.log(`💾 Database mode: ${useDatabase ? 'PostgreSQL' : 'Memory'}`);
     });
     
   } catch (error) {
-    console.error('Failed to start server:', error);
-    process.exit(1);
+    console.error('❌ Failed to start server:', error);
+    console.log('🔄 Attempting to start in memory-only mode...');
+    
+    // Try to start without database
+    app.listen(PORT, () => {
+      console.log(`🚀 Park4 app running on port ${PORT} (memory mode)`);
+      console.log(`📱 Access the app at: http://localhost:${PORT}`);
+    });
   }
 }
 

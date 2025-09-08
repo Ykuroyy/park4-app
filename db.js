@@ -1,58 +1,92 @@
 const { Pool } = require('pg');
 
 // Database configuration
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || process.env.DATABASE_PRIVATE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
-});
+let pool = null;
+let useDatabase = false;
+
+// Check if database URL is available
+const databaseUrl = process.env.DATABASE_URL || process.env.DATABASE_PRIVATE_URL;
+
+if (databaseUrl) {
+  pool = new Pool({
+    connectionString: databaseUrl,
+    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+    max: 20,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 2000,
+  });
+  useDatabase = true;
+  console.log('Database configuration initialized');
+} else {
+  console.warn('No database URL found, running in memory-only mode');
+}
 
 // Initialize database tables
 async function initializeDatabase() {
-  const client = await pool.connect();
+  if (!useDatabase || !pool) {
+    console.log('Skipping database initialization - running in memory mode');
+    return;
+  }
   
   try {
-    // Create license_plates table if it doesn't exist
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS license_plates (
-        id SERIAL PRIMARY KEY,
-        plate_number VARCHAR(50) NOT NULL,
-        latitude DECIMAL(10, 8),
-        longitude DECIMAL(11, 8),
-        accuracy DECIMAL(8, 2),
-        confidence INTEGER DEFAULT 0,
-        timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
+    const client = await pool.connect();
     
-    // Create indexes for better performance
-    await client.query(`
-      CREATE INDEX IF NOT EXISTS idx_license_plates_timestamp 
-      ON license_plates(timestamp DESC);
-    `);
-    
-    await client.query(`
-      CREATE INDEX IF NOT EXISTS idx_license_plates_plate_number 
-      ON license_plates(plate_number);
-    `);
-    
-    console.log('Database tables initialized successfully');
+    try {
+      // Create license_plates table if it doesn't exist
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS license_plates (
+          id SERIAL PRIMARY KEY,
+          plate_number VARCHAR(50) NOT NULL,
+          latitude DECIMAL(10, 8),
+          longitude DECIMAL(11, 8),
+          accuracy DECIMAL(8, 2),
+          confidence INTEGER DEFAULT 0,
+          timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+      
+      // Create indexes for better performance
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_license_plates_timestamp 
+        ON license_plates(timestamp DESC);
+      `);
+      
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_license_plates_plate_number 
+        ON license_plates(plate_number);
+      `);
+      
+      console.log('Database tables initialized successfully');
+      
+    } catch (error) {
+      console.error('Error initializing database:', error);
+      throw error;
+    } finally {
+      client.release();
+    }
     
   } catch (error) {
-    console.error('Error initializing database:', error);
-    throw error;
-  } finally {
-    client.release();
+    console.error('Database connection failed, switching to memory mode:', error.message);
+    useDatabase = false;
+    pool = null;
   }
 }
 
 // Database operations
 class DatabaseManager {
+  constructor() {
+    // Import memory store for fallback
+    const MemoryStore = require('./memoryStore');
+    this.memoryStore = new MemoryStore();
+  }
+
   // Save a new license plate record
   async savePlate(plateData) {
+    if (!useDatabase || !pool) {
+      return await this.memoryStore.savePlate(plateData);
+    }
+
     const client = await pool.connect();
     
     try {
@@ -67,8 +101,8 @@ class DatabaseManager {
       return result.rows[0];
       
     } catch (error) {
-      console.error('Error saving plate:', error);
-      throw error;
+      console.error('Error saving plate to database, falling back to memory:', error);
+      return await this.memoryStore.savePlate(plateData);
     } finally {
       client.release();
     }
@@ -76,6 +110,10 @@ class DatabaseManager {
   
   // Get all license plates with pagination
   async getAllPlates(limit = 100, offset = 0) {
+    if (!useDatabase || !pool) {
+      return await this.memoryStore.getAllPlates(limit, offset);
+    }
+
     const client = await pool.connect();
     
     try {
@@ -104,8 +142,8 @@ class DatabaseManager {
       };
       
     } catch (error) {
-      console.error('Error getting plates:', error);
-      throw error;
+      console.error('Error getting plates from database, falling back to memory:', error);
+      return await this.memoryStore.getAllPlates(limit, offset);
     } finally {
       client.release();
     }
@@ -113,6 +151,10 @@ class DatabaseManager {
   
   // Delete all license plates
   async clearAllPlates() {
+    if (!useDatabase || !pool) {
+      return await this.memoryStore.clearAllPlates();
+    }
+
     const client = await pool.connect();
     
     try {
@@ -120,8 +162,8 @@ class DatabaseManager {
       return result.rowCount;
       
     } catch (error) {
-      console.error('Error clearing plates:', error);
-      throw error;
+      console.error('Error clearing plates from database, falling back to memory:', error);
+      return await this.memoryStore.clearAllPlates();
     } finally {
       client.release();
     }
@@ -129,6 +171,10 @@ class DatabaseManager {
   
   // Check for duplicate plates within a time window
   async checkDuplicate(plateNumber, timeWindowMinutes = 5) {
+    if (!useDatabase || !pool) {
+      return await this.memoryStore.checkDuplicate(plateNumber, timeWindowMinutes);
+    }
+
     const client = await pool.connect();
     
     try {
@@ -142,8 +188,8 @@ class DatabaseManager {
       return result.rows.length > 0;
       
     } catch (error) {
-      console.error('Error checking duplicate:', error);
-      throw error;
+      console.error('Error checking duplicate in database, falling back to memory:', error);
+      return await this.memoryStore.checkDuplicate(plateNumber, timeWindowMinutes);
     } finally {
       client.release();
     }
@@ -151,6 +197,10 @@ class DatabaseManager {
   
   // Get statistics
   async getStats() {
+    if (!useDatabase || !pool) {
+      return await this.memoryStore.getStats();
+    }
+
     const client = await pool.connect();
     
     try {
@@ -174,8 +224,8 @@ class DatabaseManager {
       };
       
     } catch (error) {
-      console.error('Error getting stats:', error);
-      throw error;
+      console.error('Error getting stats from database, falling back to memory:', error);
+      return await this.memoryStore.getStats();
     } finally {
       client.release();
     }
@@ -185,13 +235,17 @@ class DatabaseManager {
 // Handle graceful shutdown
 process.on('SIGINT', async () => {
   console.log('Closing database connections...');
-  await pool.end();
+  if (pool) {
+    await pool.end();
+  }
   process.exit(0);
 });
 
 process.on('SIGTERM', async () => {
   console.log('Closing database connections...');
-  await pool.end();
+  if (pool) {
+    await pool.end();
+  }
   process.exit(0);
 });
 
@@ -199,5 +253,6 @@ process.on('SIGTERM', async () => {
 module.exports = {
   pool,
   initializeDatabase,
-  DatabaseManager
+  DatabaseManager,
+  useDatabase
 };
