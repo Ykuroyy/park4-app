@@ -1,4 +1,11 @@
-const vision = require('@google-cloud/vision');
+// OCR依存関係を安全にインポート
+let vision = null;
+try {
+  vision = require('@google-cloud/vision');
+} catch (error) {
+  console.warn('⚠️ Google Cloud Vision not installed:', error.message);
+}
+
 const OCROptimizer = require('./ocrOptimizer');
 
 class OCRService {
@@ -20,7 +27,7 @@ class OCRService {
     }
 
     // Google Cloud Vision API client（設定されている場合のみ）
-    if (process.env.GOOGLE_CLOUD_PROJECT_ID || process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+    if (vision && (process.env.GOOGLE_CLOUD_PROJECT_ID || process.env.GOOGLE_APPLICATION_CREDENTIALS)) {
       try {
         const clientConfig = {};
         
@@ -44,7 +51,7 @@ class OCRService {
         this.visionClient = null;
       }
     } else {
-      console.log('ℹ️ Google Cloud Vision API not configured - using fallback mode');
+      console.log('ℹ️ Google Cloud Vision API not available - using fallback mode');
       this.visionClient = null;
     }
   }
@@ -231,7 +238,13 @@ class OCRService {
 
   // AWS Rekognitionを使用する場合の代替実装
   async recognizeWithAWS(imageBuffer) {
-    const AWS = require('aws-sdk');
+    let AWS = null;
+    try {
+      AWS = require('aws-sdk');
+    } catch (error) {
+      console.warn('⚠️ AWS SDK not available:', error.message);
+      return null;
+    }
     const rekognition = new AWS.Rekognition({
       region: process.env.AWS_REGION || 'ap-northeast-1'
     });
