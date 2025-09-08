@@ -8,13 +8,13 @@ class AppManager {
     
     async initializeApp() {
         try {
-            // Check browser compatibility
-            this.checkCompatibility();
-            
-            // Initialize managers
+            // Initialize managers first
             window.gpsManager = new GPSManager();
             window.ocrManager = new OCRManager();
             window.cameraManager = new CameraManager();
+            
+            // Check browser compatibility after managers are created
+            this.checkCompatibility();
             
             // Set up event listeners
             this.setupEventListeners();
@@ -33,23 +33,29 @@ class AppManager {
     checkCompatibility() {
         const issues = [];
         
-        // Check camera support
-        if (!CameraManager.isSupported()) {
-            issues.push('カメラがサポートされていません');
-        }
-        
-        // Check GPS support
-        if (!window.gpsManager || !window.gpsManager.isGeolocationSupported()) {
-            issues.push('GPS機能がサポートされていません');
-        }
-        
-        // Check localStorage support
-        if (!this.isLocalStorageSupported()) {
-            issues.push('ローカルストレージがサポートされていません');
-        }
-        
-        if (issues.length > 0) {
-            showNotification(`互換性の問題: ${issues.join(', ')}`, 'warning');
+        try {
+            // Check camera support
+            if (!CameraManager.isSupported()) {
+                issues.push('カメラがサポートされていません');
+            }
+            
+            // Check GPS support
+            if (!window.gpsManager || !window.gpsManager.isGeolocationSupported()) {
+                issues.push('GPS機能がサポートされていません');
+            }
+            
+            // Check localStorage support
+            if (!this.isLocalStorageSupported()) {
+                issues.push('ローカルストレージがサポートされていません');
+            }
+            
+            if (issues.length > 0) {
+                console.warn('Compatibility issues:', issues);
+                showNotification(`互換性の問題がありますが、基本機能は利用できます`, 'warning');
+            }
+        } catch (error) {
+            console.warn('Compatibility check failed:', error);
+            // Don't throw error, just continue
         }
     }
     

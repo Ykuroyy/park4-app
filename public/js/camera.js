@@ -1,26 +1,45 @@
 class CameraManager {
     constructor() {
-        this.videoElement = document.getElementById('videoElement');
-        this.canvas = document.getElementById('canvas');
-        this.ctx = this.canvas.getContext('2d');
-        this.stream = null;
-        this.isRecording = false;
-        this.captureInterval = null;
-        
-        this.initializeElements();
-        this.setupEventListeners();
+        try {
+            this.videoElement = document.getElementById('videoElement');
+            this.canvas = document.getElementById('canvas');
+            this.ctx = this.canvas?.getContext('2d') || null;
+            this.stream = null;
+            this.isRecording = false;
+            this.captureInterval = null;
+            
+            this.initializeElements();
+            this.setupEventListeners();
+        } catch (error) {
+            console.error('CameraManager initialization error:', error);
+            // Continue without camera functionality
+        }
     }
     
     initializeElements() {
-        this.startBtn = document.getElementById('startBtn');
-        this.stopBtn = document.getElementById('stopBtn');
-        this.captureBtn = document.getElementById('captureBtn');
+        try {
+            this.startBtn = document.getElementById('startBtn');
+            this.stopBtn = document.getElementById('stopBtn');
+            this.captureBtn = document.getElementById('captureBtn');
+        } catch (error) {
+            console.error('Camera elements not found:', error);
+        }
     }
     
     setupEventListeners() {
-        this.startBtn.addEventListener('click', () => this.startCamera());
-        this.stopBtn.addEventListener('click', () => this.stopCamera());
-        this.captureBtn.addEventListener('click', () => this.captureFrame());
+        try {
+            if (this.startBtn) {
+                this.startBtn.addEventListener('click', () => this.startCamera());
+            }
+            if (this.stopBtn) {
+                this.stopBtn.addEventListener('click', () => this.stopCamera());
+            }
+            if (this.captureBtn) {
+                this.captureBtn.addEventListener('click', () => this.captureFrame());
+            }
+        } catch (error) {
+            console.error('Camera event listener setup failed:', error);
+        }
     }
     
     async startCamera() {

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="152" height="152" viewBox="0 0 152 152" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4CAF50;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2E7D32;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="152" height="152" rx="15.200000000000001" fill="url(#grad1)"/>
+  <g transform="translate(22.8, 30.400000000000002)">
+    <!-- 車のアイコン -->
+    <rect x="15.200000000000001" y="53.199999999999996" width="76" height="22.8" rx="3.04" fill="white"/>
+    <circle cx="27.36" cy="83.60000000000001" r="6.08" fill="white"/>
+    <circle cx="79.04" cy="83.60000000000001" r="6.08" fill="white"/>
+    <!-- P4テキスト -->
+    <text x="7.6000000000000005" y="38" font-family="Arial, sans-serif" font-size="18.24" font-weight="bold" fill="white">P4</text>
+  </g>
+</svg>

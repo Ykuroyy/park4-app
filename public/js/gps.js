@@ -8,12 +8,12 @@ class GPSManager {
     }
     
     async initializeGPS() {
-        if (!this.isGeolocationSupported()) {
-            updateGPSStatus('GPS未対応');
-            return;
-        }
-        
         try {
+            if (!this.isGeolocationSupported()) {
+                updateGPSStatus('GPS未対応');
+                return;
+            }
+            
             updateGPSStatus('GPS許可要求中...');
             
             // Request permission first
@@ -26,8 +26,9 @@ class GPSManager {
             }
             
         } catch (error) {
-            console.error('GPS initialization error:', error);
-            updateGPSStatus('GPS初期化エラー');
+            console.warn('GPS initialization error:', error);
+            updateGPSStatus('GPS使用不可');
+            // Don't throw error, just continue
         }
     }
     
@@ -80,7 +81,8 @@ class GPSManager {
         };
         
         const accuracy = Math.round(position.coords.accuracy);
-        updateGPSStatus(`GPS取得成功 (精度: ${accuracy}m)`);\n        
+        updateGPSStatus(`GPS取得成功 (精度: ${accuracy}m)`);
+        
         console.log('GPS Position updated:', this.currentPosition);
     }
     

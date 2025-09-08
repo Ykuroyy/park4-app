@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Park4 - Debug Mode</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #f0f0f0;
+        }
+        .debug-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .error { color: red; }
+        .success { color: green; }
+        .warning { color: orange; }
+        pre { background: #f8f8f8; padding: 10px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Park4 - Debug Mode</h1>
+    
+    <div class="debug-container">
+        <h2>📊 System Check</h2>
+        <div id="systemCheck"></div>
+    </div>
+    
+    <div class="debug-container">
+        <h2>📱 Browser Capabilities</h2>
+        <div id="browserCheck"></div>
+    </div>
+    
+    <div class="debug-container">
+        <h2>🚨 Errors</h2>
+        <div id="errorLog"></div>
+    </div>
+
+    <div class="debug-container">
+        <h2>🎯 Actions</h2>
+        <button onclick="testBasicFunctions()">Test Basic Functions</button>
+        <button onclick="clearCache()">Clear Cache</button>
+        <button onclick="location.href='/'">Back to App</button>
+    </div>
+
+    <script>
+        let errors = [];
+        
+        // Override console.error to capture errors
+        const originalConsoleError = console.error;
+        console.error = function(...args) {
+            originalConsoleError.apply(console, args);
+            errors.push(args.join(' '));
+            updateErrorLog();
+        };
+
+        function updateErrorLog() {
+            const errorDiv = document.getElementById('errorLog');
+            if (errors.length === 0) {
+                errorDiv.innerHTML = '<div class="success">✅ No errors detected</div>';
+            } else {
+                errorDiv.innerHTML = errors.map(error => 
+                    `<div class="error">❌ ${error}</div>`
+                ).join('');
+            }
+        }
+
+        function runSystemCheck() {
+            const checks = [];
+            
+            // Check if running over HTTPS (required for camera)
+            checks.push({
+                name: 'HTTPS/Localhost',
+                status: location.protocol === 'https:' || location.hostname === 'localhost',
+                required: true
+            });
+            
+            // Check getUserMedia support
+            checks.push({
+                name: 'Camera API',
+                status: !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia),
+                required: true
+            });
+            
+            // Check Geolocation support
+            checks.push({
+                name: 'GPS API', 
+                status: 'geolocation' in navigator,
+                required: false
+            });
+            
+            // Check localStorage
+            checks.push({
+                name: 'Local Storage',
+                status: typeof(Storage) !== "undefined",
+                required: false
+            });
+
+            const systemDiv = document.getElementById('systemCheck');
+            systemDiv.innerHTML = checks.map(check => {
+                const icon = check.status ? '✅' : '❌';
+                const className = check.status ? 'success' : (check.required ? 'error' : 'warning');
+                const required = check.required ? ' (Required)' : ' (Optional)';
+                return `<div class="${className}">${icon} ${check.name}${required}</div>`;
+            }).join('');
+        }
+
+        function runBrowserCheck() {
+            const info = {
+                'User Agent': navigator.userAgent,
+                'Language': navigator.language,
+                'Platform': navigator.platform,
+                'Cookie Enabled': navigator.cookieEnabled,
+                'Java Enabled': navigator.javaEnabled(),
+                'Screen Resolution': `${screen.width}x${screen.height}`,
+                'Viewport Size': `${window.innerWidth}x${window.innerHeight}`
+            };
+
+            const browserDiv = document.getElementById('browserCheck');
+            browserDiv.innerHTML = Object.entries(info).map(([key, value]) => 
+                `<div><strong>${key}:</strong> ${value}</div>`
+            ).join('');
+        }
+
+        function testBasicFunctions() {
+            console.log('Testing basic functions...');
+            
+            try {
+                // Test if main classes can be instantiated
+                if (typeof OCRManager !== 'undefined') {
+                    console.log('✅ OCRManager available');
+                } else {
+                    console.error('❌ OCRManager not found');
+                }
+                
+                if (typeof CameraManager !== 'undefined') {
+                    console.log('✅ CameraManager available');
+                } else {
+                    console.error('❌ CameraManager not found');
+                }
+                
+                if (typeof GPSManager !== 'undefined') {
+                    console.log('✅ GPSManager available');
+                } else {
+                    console.error('❌ GPSManager not found');
+                }
+                
+            } catch (error) {
+                console.error('Basic function test failed:', error);
+            }
+        }
+
+        function clearCache() {
+            if ('caches' in window) {
+                caches.keys().then(names => {
+                    names.forEach(name => caches.delete(name));
+                });
+            }
+            alert('Cache cleared! Please refresh the page.');
+        }
+
+        // Run checks on load
+        document.addEventListener('DOMContentLoaded', () => {
+            runSystemCheck();
+            runBrowserCheck();
+            updateErrorLog();
+        });
+    </script>
+    
+    <!-- Load app scripts for testing -->
+    <script src="/js/ocr.js"></script>
+    <script src="/js/camera.js"></script>
+    <script src="/js/gps.js"></script>
+    <script src="/js/app.js"></script>
+</body>
+</html>
