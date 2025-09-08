@@ -6,9 +6,13 @@ const cors = require('cors');
 const helmet = require('helmet');
 const compression = require('compression');
 const ExcelJS = require('exceljs');
+const { initializeDatabase, DatabaseManager } = require('./db');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Initialize database manager
+const dbManager = new DatabaseManager();
 
 // Middleware
 app.use(helmet({
@@ -42,16 +46,13 @@ const upload = multer({
   limits: { fileSize: 50 * 1024 * 1024 } // 50MB limit
 });
 
-// In-memory storage for license plate data
-let licensePlateData = [];
-
 // Routes
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // API endpoint to save license plate data
-app.post('/api/save-plate', (req, res) => {
+app.post('/api/save-plate', async (req, res) => {
   try {
     const { plateNumber, location, timestamp, confidence } = req.body;
     
@@ -59,22 +60,32 @@ app.post('/api/save-plate', (req, res) => {
       return res.status(400).json({ error: 'License plate number is required' });
     }
 
+    // Check for duplicates
+    const isDuplicate = await dbManager.checkDuplicate(plateNumber.toUpperCase());
+    if (isDuplicate) {
+      return res.status(409).json({ 
+        error: 'Duplicate license plate detected within 5 minutes',
+        duplicate: true 
+      });
+    }
+
     const plateData = {
-      id: Date.now(),
       plateNumber: plateNumber.toUpperCase(),
       latitude: location?.latitude || null,
       longitude: location?.longitude || null,
+      accuracy: location?.accuracy || null,
       timestamp: timestamp || new Date().toISOString(),
       confidence: confidence || 0
     };
 
-    licensePlateData.push(plateData);
+    const savedPlate = await dbManager.savePlate(plateData);
+    const stats = await dbManager.getStats();
     
     res.json({ 
       success: true, 
       message: 'License plate saved successfully',
-      data: plateData,
-      totalCount: licensePlateData.length
+      data: savedPlate,
+      totalCount: stats.total
     });
   } catch (error) {
     console.error('Error saving plate data:', error);
@@ -83,23 +94,53 @@ app.post('/api/save-plate', (req, res) => {
 });
 
 // API endpoint to get all license plate data
-app.get('/api/plates', (req, res) => {
-  res.json({ 
-    success: true, 
-    data: licensePlateData,
-    count: licensePlateData.length
-  });
+app.get('/api/plates', async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 100;
+    const offset = (page - 1) * limit;
+
+    const result = await dbManager.getAllPlates(limit, offset);
+    
+    res.json({ 
+      success: true, 
+      data: result.plates,
+      count: result.plates.length,
+      total: result.total,
+      hasMore: result.hasMore,
+      page,
+      limit
+    });
+  } catch (error) {
+    console.error('Error getting plates:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 // API endpoint to clear all data
-app.delete('/api/plates', (req, res) => {
-  licensePlateData = [];
-  res.json({ success: true, message: 'All data cleared' });
+app.delete('/api/plates', async (req, res) => {
+  try {
+    const deletedCount = await dbManager.clearAllPlates();
+    res.json({ 
+      success: true, 
+      message: 'All data cleared',
+      deletedCount 
+    });
+  } catch (error) {
+    console.error('Error clearing plates:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 // API endpoint to export data to Excel
 app.get('/api/export/excel', async (req, res) => {
   try {
+    const result = await dbManager.getAllPlates(10000, 0); // Get all data for export
+    
+    if (result.plates.length === 0) {
+      return res.status(400).json({ error: 'No data to export' });
+    }
+
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('License Plates');
 
@@ -109,13 +150,19 @@ app.get('/api/export/excel', async (req, res) => {
       { header: 'License Plate', key: 'plateNumber', width: 15 },
       { header: 'Latitude', key: 'latitude', width: 15 },
       { header: 'Longitude', key: 'longitude', width: 15 },
-      { header: 'Timestamp', key: 'timestamp', width: 20 },
-      { header: 'Confidence', key: 'confidence', width: 12 }
+      { header: 'Accuracy (m)', key: 'accuracy', width: 12 },
+      { header: 'Confidence (%)', key: 'confidence', width: 12 },
+      { header: 'Detection Time', key: 'timestamp', width: 20 },
+      { header: 'Created At', key: 'createdAt', width: 20 }
     ];
 
     // Add data
-    licensePlateData.forEach(plate => {
-      worksheet.addRow(plate);
+    result.plates.forEach(plate => {
+      worksheet.addRow({
+        ...plate,
+        timestamp: new Date(plate.timestamp).toLocaleString('ja-JP'),
+        createdAt: new Date(plate.createdAt).toLocaleString('ja-JP')
+      });
     });
 
     // Style headers
@@ -140,8 +187,23 @@ app.get('/api/export/excel', async (req, res) => {
   }
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`Park4 app running on port ${PORT}`);
-  console.log(`Access the app at: http://localhost:${PORT}`);
-});
+// Initialize database and start server
+async function startServer() {
+  try {
+    // Initialize database tables
+    await initializeDatabase();
+    console.log('Database initialized successfully');
+    
+    // Start server
+    app.listen(PORT, () => {
+      console.log(`Park4 app running on port ${PORT}`);
+      console.log(`Access the app at: http://localhost:${PORT}`);
+    });
+    
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
+}
+
+startServer();
