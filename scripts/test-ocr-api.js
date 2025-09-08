@@ -45,3 +45,9 @@ try {
 
 console.log('\n🚀 Test completed!');
 console.log('If deployed on Railway, check the deployment logs.');
+console.log('\n📊 Railway Environment Check:');
+console.log('1. Check Railway dashboard -> Project -> Variables');
+console.log('2. Verify GOOGLE_CLOUD_PROJECT_ID is set');
+console.log('3. Verify GOOGLE_APPLICATION_CREDENTIALS contains valid JSON');
+console.log('4. Check deployment logs for this script output');
+console.log('\n🔍 Access /debug/env endpoint to see environment status');

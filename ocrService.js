@@ -52,6 +52,10 @@ class OCRService {
       }
     } else {
       console.log('ℹ️ Google Cloud Vision API not available - using fallback mode');
+      console.log('🔍 Debug info:');
+      console.log('  - vision package:', vision ? 'Available' : 'Not available');
+      console.log('  - GOOGLE_CLOUD_PROJECT_ID:', process.env.GOOGLE_CLOUD_PROJECT_ID ? 'Set' : 'Not set');
+      console.log('  - GOOGLE_APPLICATION_CREDENTIALS:', process.env.GOOGLE_APPLICATION_CREDENTIALS ? `Set (${process.env.GOOGLE_APPLICATION_CREDENTIALS.length} chars)` : 'Not set');
       this.visionClient = null;
     }
   }

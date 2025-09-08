@@ -206,11 +206,36 @@ async function startServer() {
       console.log('⚠️  Running in memory-only mode (no database)');
     }
     
+    // Railway環境デバッグ用エンドポイント
+    app.get('/debug/env', (req, res) => {
+      res.json({
+        environment: {
+          NODE_ENV: process.env.NODE_ENV,
+          PORT: process.env.PORT,
+          GOOGLE_CLOUD_PROJECT_ID: process.env.GOOGLE_CLOUD_PROJECT_ID ? '✅ Set' : '❌ Not set',
+          GOOGLE_APPLICATION_CREDENTIALS: process.env.GOOGLE_APPLICATION_CREDENTIALS ? '✅ Set (length: ' + process.env.GOOGLE_APPLICATION_CREDENTIALS.length + ')' : '❌ Not set',
+          DATABASE_URL: process.env.DATABASE_URL ? '✅ Set' : '❌ Not set'
+        },
+        packages: {
+          'google-cloud-vision': (() => {
+            try {
+              require('@google-cloud/vision');
+              return '✅ Available';
+            } catch (e) {
+              return '❌ Not available: ' + e.message;
+            }
+          })()
+        },
+        timestamp: new Date().toISOString()
+      });
+    });
+
     // Start server
     app.listen(PORT, () => {
       console.log(`🚀 Park4 app running on port ${PORT}`);
       console.log(`📱 Access the app at: http://localhost:${PORT}`);
       console.log(`💾 Database mode: ${useDatabase ? 'PostgreSQL' : 'Memory'}`);
+      console.log(`🔧 Debug info: http://localhost:${PORT}/debug/env`);
     });
     
   } catch (error) {
