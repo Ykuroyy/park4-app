@@ -12,7 +12,8 @@
       "Bash(echo:*)",
       "Bash(curl:*)",
       "Bash(node:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(sed:*)"
     ],
     "deny": [],
     "ask": []

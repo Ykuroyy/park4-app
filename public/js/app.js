@@ -8,10 +8,30 @@ class AppManager {
     
     async initializeApp() {
         try {
-            // Initialize managers first
-            window.gpsManager = new GPSManager();
-            window.ocrManager = new OCRManager();
-            window.cameraManager = new CameraManager();
+            // Initialize managers first with error handling
+            try {
+                window.gpsManager = new GPSManager();
+                console.log('✅ GPSManager initialized');
+            } catch (error) {
+                console.error('❌ GPSManager failed:', error);
+                window.gpsManager = null;
+            }
+
+            try {
+                window.ocrManager = new OCRManager();
+                console.log('✅ OCRManager initialized');
+            } catch (error) {
+                console.error('❌ OCRManager failed:', error);
+                window.ocrManager = null;
+            }
+
+            try {
+                window.cameraManager = new CameraManager();
+                console.log('✅ CameraManager initialized');
+            } catch (error) {
+                console.error('❌ CameraManager failed:', error);
+                window.cameraManager = null;
+            }
             
             // Check browser compatibility after managers are created
             this.checkCompatibility();

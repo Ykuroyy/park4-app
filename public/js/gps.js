@@ -81,7 +81,7 @@ class GPSManager {
         };
         
         const accuracy = Math.round(position.coords.accuracy);
-        updateGPSStatus(`GPS取得成功 (精度: ${accuracy}m)`);
+        updateGPSStatus('GPS取得成功 (精度: ' + accuracy + 'm)');
         
         console.log('GPS Position updated:', this.currentPosition);
     }
