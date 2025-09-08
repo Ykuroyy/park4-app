@@ -38,6 +38,7 @@ class OCRManager {
         try {
             // Simulate OCR processing - replace with actual OCR implementation
             const plateNumber = await this.simulateOCR(imageData);
+            console.log('OCR result:', plateNumber);
             
             updateRecognitionStatus('🔍 解析中...');
             
@@ -161,14 +162,27 @@ class OCRManager {
             
             if (response.ok) {
                 const result = await response.json();
+                console.log('Plate data saved successfully:', result);
                 showNotification(`ナンバープレート「${plateNumber}」を保存しました`, 'success');
                 
-                // Update UI
-                window.appManager.addPlateToList(result.data);
-                window.appManager.updatePlateCounter(result.totalCount);
+                // Update UI with proper data structure
+                const plateInfo = result.data || {
+                    plateNumber: plateNumber,
+                    latitude: location?.latitude || null,
+                    longitude: location?.longitude || null,
+                    accuracy: location?.accuracy || null,
+                    confidence: 85,
+                    timestamp: new Date().toISOString(),
+                    createdAt: new Date().toISOString()
+                };
+                
+                window.appManager.addPlateToList(plateInfo);
+                window.appManager.updatePlateCounter();
                 
             } else {
-                throw new Error('Failed to save plate data');
+                const errorText = await response.text();
+                console.error('Save failed:', response.status, errorText);
+                throw new Error(`Failed to save plate data: ${response.status}`);
             }
             
         } catch (error) {

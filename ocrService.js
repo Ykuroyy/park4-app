@@ -100,9 +100,15 @@ class OCRService {
         return this.fallbackOCR(imageBuffer);
       }
 
-      // Google Cloud Vision APIでテキスト検出
+      // Google Cloud Vision APIでテキスト検出（日本語最適化）
       const [result] = await this.visionClient.textDetection({
-        image: { content: imageBuffer }
+        image: { content: imageBuffer },
+        imageContext: {
+          languageHints: ['ja', 'en'], // 日本語と英語を優先
+          textDetectionParams: {
+            enableTextDetectionConfidenceScore: true
+          }
+        }
       });
 
       const detections = result.textAnnotations;
@@ -314,14 +320,23 @@ class OCRService {
     try {
       const sharp = require('sharp');
       
+      // ナンバープレート認識に最適化された前処理
       return await sharp(imageBuffer)
-        .resize(1280, 720, { 
+        .resize(1920, 1080, { 
           fit: 'inside',
           withoutEnlargement: true 
         })
-        .greyscale()
+        // コントラストを強化してナンバープレートを明確にする
+        .gamma(1.2)
         .normalize()
-        .sharpen()
+        .sharpen({ 
+          sigma: 1, 
+          flat: 1, 
+          jagged: 2 
+        })
+        // ノイズ除去
+        .median(3)
+        .jpeg({ quality: 95 })
         .toBuffer();
     } catch (error) {
       console.warn('Image preprocessing failed, using original buffer:', error.message);

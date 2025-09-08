@@ -104,15 +104,25 @@ class AppManager {
     }
     
     addPlateToList(plateInfo) {
-        // Check for duplicates (within 5 minutes)
-        const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+        console.log('Adding plate to list:', plateInfo);
+        
+        // Validate plateInfo structure
+        if (!plateInfo || !plateInfo.plateNumber) {
+            console.error('Invalid plate info:', plateInfo);
+            showNotification('無効なナンバープレートデータ', 'error');
+            return;
+        }
+        
+        // Check for duplicates (within 2 minutes - より短く)
+        const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
         const isDuplicate = this.plateData.some(plate => 
             plate.plateNumber === plateInfo.plateNumber && 
-            new Date(plate.timestamp) > fiveMinutesAgo
+            new Date(plate.timestamp || plate.createdAt) > twoMinutesAgo
         );
         
         if (isDuplicate) {
-            showNotification('重複するナンバープレートが検出されました', 'warning');
+            console.log('Duplicate detected:', plateInfo.plateNumber);
+            showNotification(`重複: ${plateInfo.plateNumber}は2分以内に登録済み`, 'warning');
             return;
         }
         
@@ -122,9 +132,23 @@ class AppManager {
             return;
         }
         
-        this.plateData.push(plateInfo);
+        // Ensure proper timestamp
+        const plateData = {
+            ...plateInfo,
+            timestamp: plateInfo.timestamp || new Date().toISOString(),
+            createdAt: plateInfo.createdAt || new Date().toISOString()
+        };
+        
+        this.plateData.push(plateData);
+        console.log('Plate added successfully. Total plates:', this.plateData.length);
+        
         this.updateUI();
         this.saveDataToLocalStorage();
+        
+        // Force UI refresh
+        setTimeout(() => {
+            this.renderPlateList();
+        }, 100);
     }
     
     updateUI() {
