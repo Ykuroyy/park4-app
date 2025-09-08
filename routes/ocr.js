@@ -95,10 +95,24 @@ router.post('/process-base64', async (req, res) => {
     console.log('Processing base64 image with OCR...');
     
     // 画像前処理
-    const preprocessedImage = await ocrService.preprocessImage(imageBuffer);
+    let preprocessedImage;
+    try {
+      preprocessedImage = await ocrService.preprocessImage(imageBuffer);
+      console.log('✅ Image preprocessing completed');
+    } catch (error) {
+      console.error('❌ Image preprocessing failed:', error.message);
+      throw new Error('Image preprocessing failed: ' + error.message);
+    }
     
     // OCR処理実行
-    const result = await ocrService.recognizeLicensePlate(preprocessedImage);
+    let result;
+    try {
+      result = await ocrService.recognizeLicensePlate(preprocessedImage);
+      console.log('✅ OCR processing completed');
+    } catch (error) {
+      console.error('❌ OCR processing failed:', error.message);
+      throw new Error('OCR processing failed: ' + error.message);
+    }
     
     if (result) {
       console.log('License plate detected:', result.plateNumber);

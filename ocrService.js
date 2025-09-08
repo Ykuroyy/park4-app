@@ -63,6 +63,11 @@ class OCRService {
   // メイン画像認識メソッド
   async recognizeLicensePlate(imageBuffer) {
     try {
+      // Google Cloud Vision APIが利用できない場合は即座にデモレスポンスを返す
+      if (!this.visionClient) {
+        console.log('🎯 Using demo mode (no Google Cloud Vision API)');
+        return await this.fallbackOCR(imageBuffer);
+      }
       // キャッシュチェック
       const imageHash = this.optimizer.generateImageHash(imageBuffer);
       const cachedResult = await this.optimizer.checkCache(imageHash);
@@ -305,18 +310,23 @@ class OCRService {
   }
 
   // 画像前処理（精度向上のため）
-  preprocessImage(imageBuffer) {
-    const sharp = require('sharp');
-    
-    return sharp(imageBuffer)
-      .resize(1280, 720, { 
-        fit: 'inside',
-        withoutEnlargement: true 
-      })
-      .greyscale()
-      .normalize()
-      .sharpen()
-      .toBuffer();
+  async preprocessImage(imageBuffer) {
+    try {
+      const sharp = require('sharp');
+      
+      return await sharp(imageBuffer)
+        .resize(1280, 720, { 
+          fit: 'inside',
+          withoutEnlargement: true 
+        })
+        .greyscale()
+        .normalize()
+        .sharpen()
+        .toBuffer();
+    } catch (error) {
+      console.warn('Image preprocessing failed, using original buffer:', error.message);
+      return imageBuffer; // 前処理に失敗した場合は元の画像を返す
+    }
   }
 
   // フォールバックOCR（Vision API未設定時）
