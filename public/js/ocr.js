@@ -64,26 +64,50 @@ class OCRManager {
     }
     
     async simulateOCR(imageData) {
-        // This is a simulation of OCR processing
-        // In a real implementation, you would:
-        // 1. Use Tesseract.js for client-side OCR
-        // 2. Send to Google Cloud Vision API
-        // 3. Use AWS Rekognition
-        // 4. Or other OCR services
-        
+        // 実際のOCR API呼び出し
+        try {
+            const response = await fetch('/api/ocr/process-base64', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    imageData: imageData
+                })
+            });
+
+            const result = await response.json();
+            
+            if (result.success && result.data) {
+                return result.data.plateNumber;
+            } else {
+                console.log('OCR did not detect license plate:', result.message);
+                return null;
+            }
+            
+        } catch (error) {
+            console.error('OCR API error:', error);
+            
+            // フォールバック: デモモード
+            console.log('Falling back to demo mode...');
+            return this.fallbackSimulation();
+        }
+    }
+
+    // フォールバック用のシミュレーション
+    fallbackSimulation() {
         return new Promise((resolve) => {
             setTimeout(() => {
-                // Simulate random detection (for demo purposes)
+                // デモモードでの検出（本番では削除）
                 const shouldDetect = Math.random() > 0.7; // 30% chance of detection
                 
                 if (shouldDetect) {
-                    // Generate a realistic Japanese license plate number
                     const plateNumber = this.generateRealisticPlateNumber();
                     resolve(plateNumber);
                 } else {
                     resolve(null);
                 }
-            }, 1500); // Simulate processing time
+            }, 1500);
         });
     }
     

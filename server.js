@@ -39,6 +39,10 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 // Serve static files
 app.use(express.static('public'));
 
+// OCR routes
+const ocrRoutes = require('./routes/ocr');
+app.use('/api/ocr', ocrRoutes);
+
 // Storage configuration for multer
 const storage = multer.memoryStorage();
 const upload = multer({ 
