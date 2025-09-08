@@ -79,6 +79,10 @@ class OCRManager {
             const result = await response.json();
             
             if (result.success && result.data) {
+                // デモモードの場合は通知を表示
+                if (result.demo) {
+                    showNotification(result.message || 'デモモードで動作中', 'warning');
+                }
                 return result.data.plateNumber;
             } else {
                 console.log('OCR did not detect license plate:', result.message);

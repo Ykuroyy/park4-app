@@ -123,9 +123,35 @@ router.post('/process-base64', async (req, res) => {
   } catch (error) {
     console.error('OCR processing error:', error);
     
+    // Google Cloud Vision APIが利用できない場合のデモレスポンス
+    if (error.message.includes('not available') || !process.env.GOOGLE_CLOUD_PROJECT_ID) {
+      console.log('Using demo OCR response (API not configured)');
+      
+      // デモ用のランダムナンバープレート生成
+      const demoPlates = [
+        '横浜123あ1234', '品川456い5678', '練馬789う9012',
+        '足立234え3456', '杉並567お6789', '世田谷890か0123'
+      ];
+      
+      const randomPlate = demoPlates[Math.floor(Math.random() * demoPlates.length)];
+      
+      return res.json({
+        success: true,
+        demo: true,
+        data: {
+          plateNumber: randomPlate,
+          confidence: Math.floor(Math.random() * 30) + 70, // 70-99%
+          rawText: `デモ: ${randomPlate}`,
+          timestamp: new Date().toISOString()
+        },
+        message: 'デモモード: Google Cloud Vision APIが設定されていません'
+      });
+    }
+    
     res.status(500).json({
       success: false,
-      error: 'OCR処理中にエラーが発生しました'
+      error: 'OCR処理中にエラーが発生しました',
+      details: error.message
     });
   }
 });
