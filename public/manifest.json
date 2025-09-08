@@ -30,9 +30,9 @@
       "purpose": "any maskable"
     },
     {
-      "src": "/icon-144.png",
+      "src": "/icon-144.svg",
       "sizes": "144x144",
-      "type": "image/png",
+      "type": "image/svg+xml",
       "purpose": "any maskable"
     },
     {

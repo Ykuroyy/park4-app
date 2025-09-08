@@ -28,11 +28,13 @@ class GPSManager {
         } catch (error) {
             console.warn('GPS initialization error:', error);
             updateGPSStatus('GPS使用不可');
+            // Don't throw error, just continue
         }
     }
     
     async requestPermission() {
         try {
+            // Try to get current position to check permissions
             const position = await this.getCurrentPosition();
             return position !== null;
         } catch (error) {
@@ -49,7 +51,7 @@ class GPSManager {
         const options = {
             enableHighAccuracy: true,
             timeout: 10000,
-            maximumAge: 60000
+            maximumAge: 60000 // Use cached position if less than 1 minute old
         };
         
         this.watchId = navigator.geolocation.watchPosition(
@@ -79,8 +81,7 @@ class GPSManager {
         };
         
         const accuracy = Math.round(position.coords.accuracy);
-        const message = 'GPS取得成功 (精度: ' + accuracy + 'm)';
-        updateGPSStatus(message);
+        updateGPSStatus('GPS取得成功 (精度: ' + accuracy + 'm)');
         
         console.log('GPS Position updated:', this.currentPosition);
     }
@@ -133,7 +134,7 @@ class GPSManager {
                 },
                 (error) => {
                     console.error('Get current position error:', error);
-                    resolve(this.currentPosition);
+                    resolve(this.currentPosition); // Return last known position if available
                 },
                 options
             );
@@ -144,6 +145,7 @@ class GPSManager {
         return 'geolocation' in navigator;
     }
     
+    // Format coordinates for display
     formatCoordinates(lat, lng) {
         if (!lat || !lng) {
             return 'N/A';
@@ -153,11 +155,12 @@ class GPSManager {
             return coord.toFixed(6);
         };
         
-        return formatCoord(lat) + ', ' + formatCoord(lng);
+        return `${formatCoord(lat)}, ${formatCoord(lng)}`;
     }
     
+    // Calculate distance between two points (Haversine formula)
     calculateDistance(lat1, lng1, lat2, lng2) {
-        const R = 6371;
+        const R = 6371; // Earth's radius in kilometers
         const dLat = this.degreesToRadians(lat2 - lat1);
         const dLng = this.degreesToRadians(lng2 - lng1);
         
@@ -166,15 +169,18 @@ class GPSManager {
                   Math.sin(dLng / 2) * Math.sin(dLng / 2);
         
         const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        return R * c * 1000;
+        return R * c * 1000; // Return distance in meters
     }
     
     degreesToRadians(degrees) {
         return degrees * (Math.PI / 180);
     }
     
+    // Get address from coordinates (reverse geocoding)
     async reverseGeocode(lat, lng) {
         try {
+            // This would typically use Google Maps API or similar service
+            // For now, return formatted coordinates
             return this.formatCoordinates(lat, lng);
         } catch (error) {
             console.error('Reverse geocoding error:', error);
@@ -182,6 +188,7 @@ class GPSManager {
         }
     }
     
+    // Export location data for debugging
     exportLocationData() {
         return {
             currentPosition: this.currentPosition,
@@ -192,11 +199,13 @@ class GPSManager {
     }
 }
 
+// Global utility functions for GPS status updates
 function updateGPSStatus(status) {
     const gpsStatusElement = document.querySelector('#gpsStatus .status-text');
     if (gpsStatusElement) {
         gpsStatusElement.textContent = status;
         
+        // Add visual indicators based on status
         const statusItem = document.getElementById('gpsStatus');
         statusItem.className = 'status-item';
         
