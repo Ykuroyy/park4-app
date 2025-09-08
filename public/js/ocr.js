@@ -39,8 +39,10 @@ class OCRManager {
             // Simulate OCR processing - replace with actual OCR implementation
             const plateNumber = await this.simulateOCR(imageData);
             
+            updateRecognitionStatus('🔍 解析中...');
+            
             if (plateNumber) {
-                updateRecognitionStatus('ナンバー検出！');
+                updateRecognitionStatus('✅ ナンバー検出成功！');
                 
                 // Get current location
                 const location = window.gpsManager ? await window.gpsManager.getCurrentPosition() : null;
@@ -48,11 +50,22 @@ class OCRManager {
                 // Save the detected plate
                 await this.savePlateData(plateNumber, location);
                 
-                // Visual feedback
-                this.showDetectionFeedback();
+                // Visual feedback with plate number
+                this.showDetectionFeedback(plateNumber);
+                
+                // Show success notification
+                showNotification(`ナンバープレート検出: ${plateNumber}`, 'success');
+                
+                // Return to scanning mode after 2 seconds
+                setTimeout(() => {
+                    updateRecognitionStatus('自動認識中...');
+                }, 2000);
                 
             } else {
-                updateRecognitionStatus('自動認識中...');
+                updateRecognitionStatus('❌ 検出できませんでした');
+                setTimeout(() => {
+                    updateRecognitionStatus('自動認識中...');
+                }, 1000);
             }
             
         } catch (error) {
@@ -164,16 +177,32 @@ class OCRManager {
         }
     }
     
-    showDetectionFeedback() {
+    showDetectionFeedback(plateNumber = null) {
         // Visual feedback for successful detection
         const scanArea = document.querySelector('.scan-area');
+        const scanText = document.querySelector('.scan-text');
+        
         if (scanArea) {
-            scanArea.style.borderColor = '#4CAF50';
-            scanArea.style.backgroundColor = 'rgba(76, 175, 80, 0.3)';
+            scanArea.style.borderColor = '#FF9800';
+            scanArea.style.backgroundColor = 'rgba(255, 152, 0, 0.3)';
+            scanArea.style.animation = 'none';
+            
+            if (scanText && plateNumber) {
+                scanText.textContent = `検出: ${plateNumber}`;
+                scanText.style.color = '#FF9800';
+                scanText.style.fontWeight = 'bold';
+            }
             
             setTimeout(() => {
                 scanArea.style.borderColor = '#4CAF50';
                 scanArea.style.backgroundColor = 'rgba(76, 175, 80, 0.1)';
+                scanArea.style.animation = 'scanPulse 2s infinite';
+                
+                if (scanText) {
+                    scanText.textContent = 'ナンバープレートをここに合わせてください';
+                    scanText.style.color = 'white';
+                    scanText.style.fontWeight = 'normal';
+                }
             }, 1000);
         }
     }

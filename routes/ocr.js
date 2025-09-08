@@ -137,8 +137,11 @@ router.post('/process-base64', async (req, res) => {
   } catch (error) {
     console.error('OCR processing error:', error);
     
-    // Google Cloud Vision APIが利用できない場合のデモレスポンス
-    if (error.message.includes('not available') || !process.env.GOOGLE_CLOUD_PROJECT_ID) {
+    // Google Cloud Vision APIが利用できない場合またはその他のエラーでデモレスポンス
+    if (error.message.includes('not available') || 
+        error.message.includes('preprocessing failed') || 
+        error.message.includes('processing failed') ||
+        !process.env.GOOGLE_CLOUD_PROJECT_ID) {
       console.log('Using demo OCR response (API not configured)');
       
       // デモ用のランダムナンバープレート生成
