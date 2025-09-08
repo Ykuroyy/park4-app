@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#2196F3">
+    <title>Park4 - 駐車場管理アプリ</title>
+    
+    <!-- PWA manifest -->
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" href="/favicon.ico">
+    <link rel="apple-touch-icon" href="/icon-192.png">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="/css/style.css">
+    
+    <!-- Prevent zoom on iOS -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+</head>
+<body>
+    <div id="app">
+        <header class="header">
+            <h1>🅿️ Park4</h1>
+            <div class="counter">
+                <span id="plateCount">0</span> / 100
+            </div>
+        </header>
+
+        <main class="main">
+            <div id="cameraSection" class="section">
+                <div class="camera-container">
+                    <video id="videoElement" autoplay muted playsinline></video>
+                    <canvas id="canvas" style="display: none;"></canvas>
+                    
+                    <div class="camera-overlay">
+                        <div class="scan-area">
+                            <div class="scan-corners"></div>
+                            <div class="scan-text">ナンバープレートをここに合わせてください</div>
+                        </div>
+                    </div>
+                    
+                    <div class="camera-controls">
+                        <button id="startBtn" class="btn btn-primary">
+                            📹 撮影開始
+                        </button>
+                        <button id="stopBtn" class="btn btn-secondary" style="display: none;">
+                            ⏹️ 撮影停止
+                        </button>
+                        <button id="captureBtn" class="btn btn-success" style="display: none;">
+                            📷 キャプチャ
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="statusSection" class="section">
+                <div class="status-container">
+                    <div id="gpsStatus" class="status-item">
+                        📍 GPS: <span class="status-text">取得中...</span>
+                    </div>
+                    <div id="recognitionStatus" class="status-item">
+                        🔍 認識: <span class="status-text">待機中</span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="plateListSection" class="section">
+                <div class="section-header">
+                    <h2>検出されたナンバープレート</h2>
+                    <div class="section-actions">
+                        <button id="exportBtn" class="btn btn-export">
+                            📊 Excel出力
+                        </button>
+                        <button id="clearBtn" class="btn btn-danger">
+                            🗑️ クリア
+                        </button>
+                    </div>
+                </div>
+                <div id="plateList" class="plate-list">
+                    <!-- プレートリストがここに表示されます -->
+                </div>
+            </div>
+        </main>
+
+        <div id="loading" class="loading" style="display: none;">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">処理中...</div>
+        </div>
+
+        <div id="notification" class="notification" style="display: none;">
+            <div class="notification-content">
+                <span id="notificationText"></span>
+                <button id="notificationClose">&times;</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/ocr.js"></script>
+    <script src="/js/camera.js"></script>
+    <script src="/js/gps.js"></script>
+    <script src="/js/app.js"></script>
+    
+    <!-- Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js')
+                .then(reg => console.log('Service Worker registered'))
+                .catch(err => console.log('Service Worker registration failed'));
+        }
+    </script>
+</body>
+</html>
